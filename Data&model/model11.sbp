@@ -1,0 +1,928 @@
+<?xml version="1.0"?>
+
+<!-- Evolver Model Specification File -->
+<RePastEvolver:EvolverModelSpec xmlns:RePastEvolver="http://src.uchicago.edu/simbuilder/">
+<RePastEvolver:EvolverProject  ProjectDirectory="C:\Repast 3\Agent Analyst\output" PackageName="default_package" ProjectName="Environment" ClassPath="" consoleErr="true" consoleOut="true" >
+<Description>
+<![CDATA[
+
+]]>
+</Description>
+<RePastEvolver:EvolverModel  ModelName="GISModel" DisplayName="GIS Model" Class="class uchicago.src.simbuilder.beans.gis.DefaultGISModelProducer" gisPackage="ArcGIS" >
+  <RePastEvolver:action name="initAgents" sigReadOnly="true" retType="void" imports="" paramNames="">
+<![CDATA[
+def initAgents():
+
+
+
+  Random.createUniform()
+  
+
+# int local
+  if self.initFarmerLocal:
+    print "初始化农户行政背景。。。"
+    for agent as farmerAgent in self.farmerAgentGroup:
+      agent.setupLocal()
+    print "初始化行政背景完成"
+  if self.initLandLocValue:    
+    print "初始化农户土地区位。。。"
+    for agent as farmerAgent in self.farmerAgentGroup:
+      agent.setupDisRoad()
+    print "初始化土地距道路距离完成"
+    for agent as farmerAgent in self.farmerAgentGroup:
+      agent.setupDisCountry()
+    print "初始化土地距农村居民点距离完成"
+
+    
+
+    
+# int landuse
+  if self.initLanduse:    
+    print "init plant pattern and self information for each farmer based on landuse of 2012 ..."
+    for agent as farmerAgent in self.farmerAgentGroup:
+      agent.setupLanduse()
+    print "init finished"
+    print "init statistic data of each plant pattern for every country..."
+    for agent as localAgent in self.localAgentGroup:
+      agent.step()
+    print "init finished"
+  else:
+    print "init plant pattern and self information for each farmer based on landuse of 2012([changeLanduse] unchecked last modulate) or result of last modulate([changeLanduse] checked last modulate)..."
+    count = 0
+    for agent as farmerAgent in self.farmerAgentGroup:
+      if agent.landusem != agent.landuse:    
+        count = count + 1
+        agent.landusem = agent.landuse
+    if count == 0:
+      print "[changeLanduse] was probabely chencked last modulate,so you choose to init based on the result of last modulate"
+    else:
+      print "[changeLanduse] was unchecked last modulate,so you choose to init based on landuse of 2012 for more time"
+      print "init self information of farmer changing plant pattern last modulate"
+    print "init finished"
+  for agent as landuseAgent in self.landuseAgentGroup:
+    agent.landuse = agent.firstyear
+  for agent as XZAgent in self.XZAgentGroup:
+    agent.step()
+  self.writeAgents()
+  self.updateDisplay()
+  print "farmer`s plant pattern in",2012+ self.getTickCount()
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="updateDisplay" sigReadOnly="true" retType="void" imports="" paramNames="">
+<![CDATA[
+def updateDisplay():
+  print "开始更新显示......."
+  self.updateGISDisplay(self.refreshFName)
+  print "更新显示完成"
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="writeAgents" sigReadOnly="true" retType="void" imports="" paramNames="">
+<![CDATA[
+def writeAgents():
+  print "start writing data of landowner.shp..."
+  self.writeAgents(self.landuseAgentGroup,"C:/AgentBasedModel/model2015/4-8/landowner.shp")
+  print "start writing data of XZ.shp..."
+  self.writeAgents(self.XZAgentGroup,"C:/AgentBasedModel/model2015/4-8/XZ.shp")
+  print "start writing data of farmer.shp..."
+  self.writeAgents(self.farmerAgentGroup,"C:/AgentBasedModel/model2015/4-8/farmerb.shp")
+  print "farmer.shp have been writed successfully"
+  print"start writing data of XZC.shp"
+  self.writeAgents(self.localAgentGroup,"C:/AgentBasedModel/model2015/4-8/local.shp")
+  print "local.shp have been writed successfully"
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="coutrol" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def coutrol():
+#  if self.getTickCount()>5:
+#    self.stop()
+  self.num1 = 0.0
+  self.num2 = 0.0
+  self.num3 = 0.0
+  self.num4 = 0.0
+
+  
+  
+  for agent as farmerAgent in self.farmerAgentGroup:
+    agent.init()
+    if agent.landuse == 1:
+      self.num1 = self.num1 + agent.Area
+    elif agent.landuse == 2:
+      self.num2 = self.num2 + agent.Area
+    elif agent.landuse == 3:
+      self.num3 = self.num3 + agent.Area
+    elif agent.landuse == 4:
+      self.num4 = self.num4 + agent.Area
+  print "year of",2012+self.getTickCount(),":"
+  print "crop Aea:",self.num1
+  print "vegetable Aea:",self.num2
+  print "greenHourse Aea:",self.num3
+  print "lawn Aea:",self.num4  
+   
+
+    
+  for agent as farmerAgent in self.farmerAgentGroup:
+    if agent.Area != 0:
+      agent.init()
+      agent.decide()
+
+
+  
+  if self.changeLanduse:
+    print "plant pattern for farmer will change...you can continue for further modulate. If you want to remodulate,you must init landuse first"
+    for agent as farmerAgent in self.farmerAgentGroup:
+      agent.landuse = agent.landusem
+    print "plant pattern for farmer have changed based on the result of this modulate,you can continue for further modulate derictly"
+    print "if you want to remodulate,you must init landuse first!!!"
+  for agent as landuseAgent in self.landuseAgentGroup:
+    for farmer as farmerAgent in self.farmerAgentGroup:
+      if agent.farmerID == farmer.Id:
+        agent.landuse = farmer.landusem
+        if self.getTickCount() == 1:
+          agent.yare1 = farmer.landusem
+        elif self.getTickCount() == 2:
+          agent.year2 = farmer.landusem
+        elif self.getTickCount() == 3:
+          agent.year3 = farmer.landusem
+        elif self.getTickCount() == 4:
+          agent.year4 = farmer.landusem
+        elif self.getTickCount() == 5:
+          agent.year5 = farmer.landusem
+        elif self.getTickCount() == 6:
+          agent.year6 = farmer.landusem
+        elif self.getTickCount() == 7:
+          agent.year7 = farmer.landusem
+        elif self.getTickCount() == 8:
+          agent.year8 = farmer.landusem
+        elif self.getTickCount() == 9:
+          agent.year9 = farmer.landusem
+        elif self.getTickCount() == 10:
+          agent.year10 = farmer.landusem       
+  print "statistic of every town..."   
+  for agent as localAgent in self.localAgentGroup:
+    agent.step()
+  for agent as XZAgent in self.XZAgentGroup:
+    agent.step()
+    
+  self.writeAgents()
+  self.updateDisplay()
+  print "farmer`s plant pattern in",2012+self.getTickCount()
+]]>
+</RePastEvolver:action>
+
+
+<RePastEvolver:parameter name="refreshFName" type="java.lang.String" defaultValue="&quot;C:/Repast 3/Agent Analyst/Refresh/&quot;" probe="false" accessible="true" />
+<RePastEvolver:parameter name="initLanduse" type="boolean" defaultValue="true" probe="true" accessible="true" />
+<RePastEvolver:parameter name="initFarmerLocal" type="boolean" defaultValue="false" probe="true" accessible="true" />
+<RePastEvolver:parameter name="initLandLocValue" type="boolean" defaultValue="false" probe="true" accessible="true" />
+<RePastEvolver:parameter name="numChange" type="int" defaultValue="0" probe="false" accessible="true" />
+<RePastEvolver:parameter name="changeLanduse" type="boolean" defaultValue="true" probe="true" accessible="true" />
+<RePastEvolver:parameter name="interestCountry" type="java.lang.String" defaultValue="&quot;100218&quot;" probe="true" accessible="true" />
+<RePastEvolver:parameter name="num1" type="double" defaultValue="0.0" probe="false" accessible="true" />
+<RePastEvolver:parameter name="num2" type="double" defaultValue="0.0" probe="false" accessible="true" />
+<RePastEvolver:parameter name="num3" type="double" defaultValue="0.0" probe="false" accessible="true" />
+<RePastEvolver:parameter name="num4" type="double" defaultValue="0.0" probe="false" accessible="true" />
+<RePastEvolver:parameter name="a" type="float" defaultValue="0" probe="true" accessible="true" />
+<RePastEvolver:parameter name="T1" type="float" defaultValue="1" probe="true" accessible="true" />
+<RePastEvolver:parameter name="T2" type="float" defaultValue="1" probe="true" accessible="true" />
+<RePastEvolver:parameter name="T3" type="float" defaultValue="1" probe="true" accessible="true" />
+<RePastEvolver:parameter name="T4" type="float" defaultValue="1" probe="true" accessible="true" />
+<RePastEvolver:parameter name="innovation" type="float" defaultValue="0.01" probe="true" accessible="true" />
+<RePastEvolver:parameter name="imitationl" type="float" defaultValue="0.1" probe="true" accessible="true" />
+<RePastEvolver:parameter name="imitationf" type="float" defaultValue="0.1" probe="true" accessible="true" />
+
+
+<RePastEvolver:schedule order="5 8 7 6" />
+<RePastEvolver:schedule order="0 1 3 2" />
+<RePastEvolver:schedule order="4"/>
+<RePastEvolver:schedule_item action="coutrol" tick="1.0" type="1" last="false" target="GISModel" id="3"/>
+
+<RePastEvolver:EvolverBean type="Compileable" class="class uchicago.src.simbuilder.beans.gis.VectorAgentProducer" name="farmerAgent" groupName="farmerAgentGroup">
+<VectorDataSource shapefile="G:\AgentBasedModel\2015Final\farmer.shp" displayField="IC1" gisPackage="ArcGIS">
+<VectorDataSourceDisplayValue field="default value" color="-65536" isDefault="true" thickness="1" />
+</VectorDataSource>
+
+  <RePastEvolver:action name="setupDisRoad" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def setupDisRoad():
+  point = self.the_geom
+  
+  distance  = 300.0
+  
+  for road as roadAgent in self.model.roadAgentGroup:
+    if road.BZ == 1:
+      roadline = road.the_geom
+      if distance > roadline.distance(point)/1000:
+        distance = roadline.distance(point)/1000
+  self.disRoad = distance
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="setupDisCountry" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def setupDisCountry():
+  point2 = self.the_geom
+  distance3 = 300.0
+  
+  
+  for country as countryAgent in self.model.countryAgentGroup:
+    countrypoly = country.the_geom
+    if  distance3 > countrypoly.distance(point2)/1000:
+      distance3 = countrypoly.distance(point2)/1000
+      
+  self.disCountry = distance3
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="setupLocal" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def setupLocal():
+  point1 = self.the_geom
+  
+  for local as localAgent in self.model.localAgentGroup:
+    localPoly = local.the_geom
+    if point1.within(localPoly):
+      self.country = local.XZQDM
+      self.w = local.pay
+      #considering agent heterogeneity
+      self.w = Random.normal.nextDouble(self.w,self.model.a/3*self.w)
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="setupLanduse" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def setupLanduse():
+  for landuse as landuseAgent in self.model.landuseAgentGroup:
+    if landuse.farmerID == self.Id:
+      self.landuse = landuse.firstyear
+    self.landusem = self.landuse
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="setupFocalra" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def setupFocalra():
+  num = 0.1
+  count1 = 0.0
+  count2 = 0.0
+  count3 = 0.0
+  count4 = 0.0
+  for agent as farmerAgent in self.model.farmerAgentGroup:
+    if self.the_geom.isWithinDistance(agent.the_geom,1000):
+      num = num + 1
+      if agent.landuse ==1:
+        count1 = count1 + 1
+      elif agent.landuse ==2:
+        count2 = count2 + 1
+      elif agent.landuse ==3:
+        count3 = count3 + 1
+      elif agent.landuse ==4:
+        count4 = count4 + 1
+  self.focalra1 = count1/num
+  self.focalra2 = count2/num
+  self.focalra3 = count3/num
+  self.focalra4 = count4/num
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="setupLocalra" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def setupLocalra():
+  lnum = 0.1
+  lcount1 = 0.0
+  lcount2 = 0.0
+  lcount3 = 0.0
+  lcount4 = 0.0
+  for lagent as farmerAgent in self.model.farmerAgentGroup:
+    if lagent.country == self.country:
+      lnum = lnum + 1
+      if lagent.landuse ==1:
+        lcount1 = lcount1 + 1
+      elif lagent.landuse ==2:
+        lcount2 = lcount2 + 1
+      elif lagent.landuse ==3:
+        lcount3 = lcount3 + 1
+      elif lagent.landuse ==4:
+        lcount4 = lcount4 + 1
+  self.localra1 = lcount1/lnum
+  self.localra2 = lcount2/lnum
+  self.localra3 = lcount3/lnum
+  self.localra4 = lcount4/lnum
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="decide" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def decide():
+  
+  self.decisionSet()
+  Random.createUniform()
+  max = -99999.0
+  
+  if self.plant1 == 1:
+    self.Mcrop()
+    if self.IC1 > max: 
+      self.landusem = 1
+      max = self.IC1
+  else:
+    self.IC1 = -99999.0
+
+    
+  if self.plant2 == 1:
+    self.Mveget()
+    if self.IC2 > max:
+      self.landusem = 2
+      max = self.IC2
+  else:
+    self.IC2 = -999999.0
+    
+  if self.plant3 == 1:
+    self.Mhourse()
+    if self.IC3 > max:
+      self.landusem = 3
+      max = self.IC3
+  else:
+    self.IC3 = -999999.0
+    
+  if self.plant4 == 1:
+    self.Mlawn()
+    if self.IC4 > max:
+      self.landusem = 4
+      max = self.IC4
+  else:
+    self.IC4 = -999999.0
+  
+
+  if Random.uniform.nextDoubleFromTo(0,1)<0.0001:
+    print self.Id,self.patternBox,self.w,self.IC1,self.IC2,self.IC3,self.IC4,max,self.landuse,self.landusem
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="Mcrop" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def Mcrop():
+  
+  # input parameters
+  seed = 0
+  water = 0
+  fertilizer = 0
+  pesticides = 0
+  labor = 0.0
+  others = 0 
+  
+  input  = seed + water + fertilizer + pesticides + labor*self.w + others
+
+  # output parameters
+  yieldC = 0
+  priceC = 0
+  yieldW = 0
+  priceW = 0
+  output = priceC*yieldC + priceW*yieldW
+  #considering allowance from goverment
+  allowance = 0
+  
+  # considering location effext
+  v = 6
+  labor = labor + labor*(4*self.disCountry/v/8)
+  
+
+  
+  # calculate IC
+  
+  self.IC1 = allowance + output - input - labor*self.w
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="Mveget" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def Mveget():
+
+  
+  # input parameters
+  seed = 0
+  water = 0
+  fertilizer = 0
+  pesticides = 0
+  labor = 0.0
+  others = 0 
+  
+  input  = seed + water + fertilizer + pesticides + labor*self.w + others
+
+  # output parameters
+  yield = 0
+  price = 0
+  output = yield * price
+  
+  # considering allowance from goverment 
+  allowance = 0
+  
+  # considering location effext
+  v = 6
+  labor = labor + labor*(4*self.disCountry/v/8)
+  Woil = 15
+  Poil = 6
+  load = 3000
+  input = input + yield*self.market/1000*Poil*Woil/100/load
+    
+  # calculate IC
+  
+  self.IC2 = allowance + output - input - labor*self.w
+  
+     
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="Mhourse" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def Mhourse():
+
+  
+  
+  # input parameters
+  seed = 0
+  water = 0
+  fertilizer = 0
+  pesticides = 0
+  labor = 0.0
+  others = 0 
+  
+  input  = seed + water + fertilizer + pesticides + labor*self.w + others
+
+  # output parameters
+  yield = 0
+  price = 0
+  output = yield*price
+  
+  # considering allowance from goverment 
+  allowance = 0
+  
+  # considering location effext
+  v = 6
+  labor = labor + labor*(4*self.disCountry/v/8)
+  Woil = 15
+  Poil = 6
+  load = 3000
+  input = input + yield*self.market/1000*Poil*Woil/100/load
+    
+  # calculate IC
+  
+  self.IC3 = allowance + output - input - labor*self.w
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="Mlawn" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def Mlawn():
+
+  
+  
+  # input parameters
+  seed = 0
+  water = 0
+  fertilizer = 0
+  pesticides = 0
+  labor = 0.0
+  others = 0 
+  
+  input  = seed + water + fertilizer + pesticides + labor*self.w + others
+
+  # output parameters
+  yield1 = 0
+  yield2 = 0
+  price1 = 0
+  price2 = 0.0
+  output = yield1*price1 + yield2*price2
+  
+  # considering allowance from goverment 
+  allowance = 0
+  
+  # considering location effext
+  v = 6
+  labor = labor + labor*(4*self.disCountry/v/8)
+  if self.disRoad > 2:
+    output = 0.9*output
+    
+      
+  # calculate IC
+  
+  self.IC4 = allowance + output - input - labor*self.w
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="init" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def init():  
+
+  self.IC1 = 0.0
+  self.IC2 = 0.0
+  self.IC3 = 0.0
+  self.IC4 = 0.0
+
+  self.plant1 = 0
+  self.plant2 = 0
+  self.plant3 = 0
+  self.plant4 = 0
+  
+
+]]>
+</RePastEvolver:action>
+
+  <RePastEvolver:action name="decisionSet" sigReadOnly="false" retType="void" imports="" paramNames="">
+<![CDATA[
+def decisionSet():
+  self.setupLocalra()
+  self.setupFocalra()
+  Random.createUniform()
+  self.patternBox = ""
+  innovation1 = self.model.T1*self.model.innovation
+  imitation1 = self.model.T1*(self.model.imitationl*self.localra1+self.model.imitationf*self.focalra1)
+  innovation2 = self.model.T2*self.model.innovation
+  imitation2 = self.model.T2*(self.model.imitationl*self.localra2+self.model.imitationf*self.focalra2)
+  innovation3 = self.model.T3*self.model.innovation
+  imitation3 = self.model.T3*(self.model.imitationl*self.localra3+self.model.imitationf*self.focalra3)
+  innovation4 = self.model.T4*self.model.innovation
+  imitation4 = self.model.T4*(self.model.imitationl*self.localra4+self.model.imitationf*self.focalra4)   
+  if self.landuse == 1:
+    self.plant1 = 1
+    self.patternBox = "crop,"
+  elif Random.uniform.nextDoubleFromTo(0,1) < innovation1:
+    self.plant1 = 1
+    self.patternBox = "crop(in),"
+  elif Random.uniform.nextDoubleFromTo(0,1) < imitation1:
+    self.plant1 = 1
+    self.patternBox = "crop(im),"
+  else:
+    self.plant1 = 0
+    
+  if self.landuse == 2:
+    self.plant2 = 1
+    self.patternBox = self.patternBox + "veget,"
+  elif Random.uniform.nextDoubleFromTo(0,1) < innovation2:
+    self.plant2 = 1
+    self.patternBox = self.patternBox + "veget(in),"
+  elif Random.uniform.nextDoubleFromTo(0,1) < imitation2:
+    self.plant2 = 1
+    self.patternBox = self.patternBox + "veget(im),"
+  else:
+    self.plant2 = 0
+    
+    
+  if self.landuse == 3:
+    self.plant3 = 1
+    self.patternBox = self.patternBox + "hourse,"
+  elif Random.uniform.nextDoubleFromTo(0,1) < innovation3:
+    self.plant3 = 1
+    self.patternBox = self.patternBox + "hourse(in),"
+  elif Random.uniform.nextDoubleFromTo(0,1) < imitation3:
+    self.plant3 = 1
+    self.patternBox = self.patternBox + "hourse(im),"
+  else:
+    self.plant3 = 0
+    
+  if self.landuse == 4:
+    self.plant4 = 1
+    self.patternBox = self.patternBox + "lawn"
+  elif Random.uniform.nextDoubleFromTo(0,1) < innovation4:
+    self.plant4 = 1
+    self.patternBox = self.patternBox + "lawn(in)"
+  elif Random.uniform.nextDoubleFromTo(0,1) < imitation4:
+    self.plant4 = 1
+    self.patternBox = self.patternBox + "lawn(im)"
+  else:
+    self.plant4 = 0
+]]>
+</RePastEvolver:action>
+
+
+
+
+</RePastEvolver:EvolverBean>
+
+<RePastEvolver:EvolverBean type="Compileable" class="class uchicago.src.simbuilder.beans.gis.VectorAgentProducer" name="roadAgent" groupName="roadAgentGroup">
+<VectorDataSource shapefile="G:\AgentBasedModel\2015Final\road.shp" displayField="BZ" gisPackage="ArcGIS">
+<VectorDataSourceDisplayValue field="default value" color="-65536" isDefault="true" thickness="1" />
+</VectorDataSource>
+
+  <RePastEvolver:action name="step" sigReadOnly="true" retType="void" imports="" paramNames="">
+<![CDATA[
+def step():
+]]>
+</RePastEvolver:action>
+
+
+
+<RePastEvolver:schedule_item action="step" tick="1.0" type="1" last="false" target="for all roadAgent" id="0"/>
+
+</RePastEvolver:EvolverBean>
+
+<RePastEvolver:EvolverBean type="Compileable" class="class uchicago.src.simbuilder.beans.gis.VectorAgentProducer" name="localAgent" groupName="localAgentGroup">
+<VectorDataSource shapefile="G:\AgentBasedModel\2015Final\local.shp" displayField="XZQDM" gisPackage="ArcGIS">
+<VectorDataSourceDisplayValue field="default value" color="-65536" isDefault="true" thickness="-1" />
+</VectorDataSource>
+
+  <RePastEvolver:action name="step" sigReadOnly="true" retType="void" imports="" paramNames="">
+<![CDATA[
+def step():
+  self.numCrop = 0
+  self.numVeget = 0
+  self.numHourse = 0
+  self.numLawn = 0
+  for st as farmerAgent in self.model.farmerAgentGroup:
+    if st.country == self.XZQDM:
+      if st.landuse == 1:
+        self.numCrop = self.numCrop + int(st.Area)
+      elif st.landuse == 2:
+        self.numVeget = self.numVeget + int(st.Area)
+      elif st.landuse == 3:
+        self.numHourse = self.numHourse + int(st.Area)
+      elif st.landuse == 4:
+        self.numLawn = self.numLawn + int(st.Area)
+]]>
+</RePastEvolver:action>
+
+
+
+
+</RePastEvolver:EvolverBean>
+
+<RePastEvolver:EvolverBean type="Compileable" class="class uchicago.src.simbuilder.beans.gis.VectorAgentProducer" name="landuseAgent" groupName="landuseAgentGroup">
+<VectorDataSource shapefile="G:\AgentBasedModel\2015Final\landowner.shp" displayField="GRIDCODE" gisPackage="ArcGIS">
+<VectorDataSourceDisplayValue field="default value" color="-65536" isDefault="true" thickness="-1" />
+</VectorDataSource>
+
+  <RePastEvolver:action name="step" sigReadOnly="true" retType="void" imports="" paramNames="">
+<![CDATA[
+def step():
+]]>
+</RePastEvolver:action>
+
+
+
+<RePastEvolver:schedule_item action="step" tick="1.0" type="1" last="false" target="for all landuseAgent" id="1"/>
+
+</RePastEvolver:EvolverBean>
+
+<RePastEvolver:EvolverBean type="Compileable" class="class uchicago.src.simbuilder.beans.gis.VectorAgentProducer" name="XZAgent" groupName="XZAgentGroup">
+<VectorDataSource shapefile="G:\AgentBasedModel\2015Final\town.shp" displayField="CArea" gisPackage="ArcGIS">
+<VectorDataSourceDisplayValue field="default value" color="-65536" isDefault="true" thickness="-1" />
+</VectorDataSource>
+
+  <RePastEvolver:action name="step" sigReadOnly="true" retType="void" imports="" paramNames="">
+<![CDATA[
+def step():
+  self.CArea = 0.0
+  self.VArea = 0.0
+  self.GArea = 0.0
+  self.LArea = 0.0
+  for agent as farmerAgent in self.model.farmerAgentGroup:
+    if agent.town == self.XZDM:
+      if agent.landusem == 1:
+        self.CArea = self.CArea + agent.Area
+      elif agent.landusem == 2:
+        self.VArea = self.VArea + agent.Area
+      elif agent.landusem == 3:
+        self.GArea = self.GArea + agent.Area
+      elif agent.landusem == 4:
+        self.LArea = self.LArea + agent.Area
+]]>
+</RePastEvolver:action>
+
+
+
+
+</RePastEvolver:EvolverBean>
+
+<RePastEvolver:EvolverBean type="Compileable" class="class uchicago.src.simbuilder.beans.gis.VectorAgentProducer" name="countryAgent" groupName="countryAgentGroup">
+<VectorDataSource shapefile="G:\AgentBasedModel\2015Final\country.shp" displayField="XZQDM" gisPackage="ArcGIS">
+<VectorDataSourceDisplayValue field="default value" color="-65536" isDefault="true" thickness="-1" />
+</VectorDataSource>
+
+  <RePastEvolver:action name="step" sigReadOnly="true" retType="void" imports="" paramNames="">
+<![CDATA[
+def step():
+  
+]]>
+</RePastEvolver:action>
+
+
+
+<RePastEvolver:schedule_item action="step" tick="1.0" type="1" last="false" target="for all countryAgent" id="2"/>
+
+</RePastEvolver:EvolverBean>
+
+<RePastEvolver:EvolverBean type="Component" class="class uchicago.src.simbuilder.beans.DataRecorder" name="dataRecorder" fileName="C:/AgentBasedModel/record/data.txt" headerComment="" delimiter="," >
+  <RePastEvolver:dsAction name="Radio2" imports="" retVal="double" maxFracDigits="-1" maxIntDigits="-1" type="0" paramNames="">
+<![CDATA[
+print "start record",self.getTickCount()
+num = 0.0
+count = 0.0
+for ss as farmerAgent in self.farmerAgentGroup:
+  count = count + ss.Area
+  if ss.landuse == 2:
+    num = num + ss.Area
+return num/count*100
+]]>
+</RePastEvolver:dsAction>
+
+  <RePastEvolver:dsAction name="Radio3" imports="" retVal="double" maxFracDigits="-1" maxIntDigits="-1" type="0" paramNames="">
+<![CDATA[
+num = 0.0
+count = 0.0
+for ss as farmerAgent in self.farmerAgentGroup:
+  count = count + ss.Area
+  if ss.landuse == 3:
+    num = num + ss.Area
+return num/count*100
+]]>
+</RePastEvolver:dsAction>
+
+  <RePastEvolver:dsAction name="Radio4" imports="" retVal="double" maxFracDigits="-1" maxIntDigits="-1" type="0" paramNames="">
+<![CDATA[
+num = 0.0
+count = 0.0
+for ss as farmerAgent in self.farmerAgentGroup:
+  count = count + ss.Area
+  if ss.landuse == 4:
+    num = num + ss.Area
+return num/count*100
+]]>
+</RePastEvolver:dsAction>
+
+  <RePastEvolver:dsAction name="W" imports="" retVal="double" maxFracDigits="-1" maxIntDigits="-1" type="0" paramNames="">
+<![CDATA[
+count = 0
+w = 0.0
+for agent as farmerAgent in self.farmerAgentGroup:
+  count = count + 1
+  w = w + agent.w
+return w/count
+]]>
+</RePastEvolver:dsAction>
+
+
+<RePastEvolver:schedule_item action="write" tick="1.0" type="5" last="false" target="Data Recorder: dataRecorder" id="4"/>
+<RePastEvolver:schedule_item action="record" tick="0.0" type="1" last="false" target="Data Recorder: dataRecorder" id="5"/>
+
+</RePastEvolver:EvolverBean>
+
+<RePastEvolver:EvolverBean type="Component" class="uchicago.src.simbuilder.beans.SequenceGraph" name="noCropRadio" title="noCropRadio" xAxisTitle="Time"
+ yAxisTitle="yAxis" xAxisStart="100.0" yAxisStart="10.0">
+
+
+<RePastEvolver:file_property doWrite="false" fileName="" />
+<RePastEvolver:seqAction name="R2" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for ss as farmerAgent in self.farmerAgentGroup:
+  count = count + 1
+  if ss.landuse == 2:
+    num = num + ss.Area
+return num
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:seqAction name="R3" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for ss as farmerAgent in self.farmerAgentGroup:
+  count = count + 1
+  if ss.landuse == 3:
+    num = num + ss.Area
+return num
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:seqAction name="R4" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for ss as farmerAgent in self.farmerAgentGroup:
+  count = count + 1
+  if ss.landuse == 4:
+    num = num + ss.Area
+return num
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:schedule_item action="update" tick="0.0" type="1" last="false" target="Sequence Graph: noCropRadio" id="6"/>
+
+</RePastEvolver:EvolverBean>
+
+
+
+
+<RePastEvolver:EvolverBean type="Component" class="uchicago.src.simbuilder.beans.SequenceGraph" name="changeRegion" title="change region" xAxisTitle="Time"
+ yAxisTitle="yAxis" xAxisStart="100.0" yAxisStart="10.0">
+
+
+<RePastEvolver:file_property doWrite="false" fileName="" />
+<RePastEvolver:seqAction name="crop" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for c as farmerAgent in self.farmerAgentGroup:
+  if c.landuse == 1:
+    count = count + c.Area
+return count/233498235.421042*100
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:seqAction name="vegetable" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for c as farmerAgent in self.farmerAgentGroup:
+  if c.landuse == 2:
+    count = count + c.Area
+
+return count/4019666.264*100
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:seqAction name="greenHourse" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for c as farmerAgent in self.farmerAgentGroup:
+  if c.landuse == 3:
+    count = count + c.Area
+return count/2010865.533*100
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:seqAction name="lawn" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for c as farmerAgent in self.farmerAgentGroup:
+  if c.landuse == 4:
+    count = count + c.Area
+return count/5475169.886*100
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:schedule_item action="update" tick="0.0" type="1" last="false" target="Sequence Graph: changeRegion" id="7"/>
+
+</RePastEvolver:EvolverBean>
+
+
+
+
+<RePastEvolver:EvolverBean type="Component" class="uchicago.src.simbuilder.beans.SequenceGraph" name="changeI" title="change interest country" xAxisTitle="Time"
+ yAxisTitle="yAxis" xAxisStart="100.0" yAxisStart="10.0">
+
+
+<RePastEvolver:file_property doWrite="false" fileName="" />
+<RePastEvolver:seqAction name="CropI" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for cii as farmerAgent in self.farmerAgentGroup:
+  if cii.country == self.interestCountry:
+    if cii.landuse == 1:
+      count = count + cii.Area
+return count
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:seqAction name="vegetableI" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for cii as farmerAgent in self.farmerAgentGroup:
+  if cii.country == self.interestCountry:
+    if cii.landuse == 2:
+      count = count + cii.Area
+return count
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:seqAction name="greenHourseI" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for cii as farmerAgent in self.farmerAgentGroup:
+  if cii.country == self.interestCountry:
+    if cii.landuse == 3:
+      count = count + cii.Area
+return count
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:seqAction name="lawnI" imports="" retVal="double" paramNames="" color="" pointType="-1">
+<![CDATA[
+num = 0.0
+count = 0.0
+for cii as farmerAgent in self.farmerAgentGroup:
+  if cii.country == self.interestCountry:
+    if cii.landuse == 4:
+      count = count + cii.Area
+return count
+]]>
+</RePastEvolver:seqAction>
+<RePastEvolver:schedule_item action="update" tick="0.0" type="1" last="false" target="Sequence Graph: changeI" id="8"/>
+
+</RePastEvolver:EvolverBean>
+
+
+
+
+
+</RePastEvolver:EvolverModel>
+</RePastEvolver:EvolverProject>
+</RePastEvolver:EvolverModelSpec>

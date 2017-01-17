@@ -1,0 +1,9 @@
+<PAMDataset>
+  <PAMRasterBand band="1">
+    <NoDataValue>-1.28000000000000E+002</NoDataValue>
+    <Metadata domain="IMAGE_STRUCTURE">
+      <MDI key="PIXELTYPE">SIGNEDBYTE</MDI>
+    </Metadata>
+    <Metadata />
+  </PAMRasterBand>
+</PAMDataset>

@@ -1,0 +1,73 @@
+runs: 1
+initLanduse {
+  set_boolean: true
+}
+
+initFarmerLocal {
+  set_boolean: false
+}
+
+initLandLocValue {
+  set_boolean: false
+}
+
+changeLanduse {
+  set_boolean: true
+}
+
+interestCountry {
+  set_string: 100218
+}
+
+a {
+  set: 0.9
+}
+
+T1 {
+  set: 1
+}
+
+T2 {
+  set: 0.5
+}
+
+T3 {
+  set: 0.3
+}
+
+T4 {
+  set: 0.7
+}
+
+innovation {
+  set: 0.01
+}
+
+imitationl {
+  set: 0.2
+}
+
+imitationf {
+  set: 0.3
+}
+
+rationalra {
+  set: 0
+}
+
+Q1 {
+  set: 0
+}
+
+Q2 {
+  set: 0.5
+}
+
+Q3 {
+  set: 0.9
+}
+
+Q4 {
+  set: 0.7
+}
+
